@@ -62,23 +62,23 @@ jobs:
             echo "Error: EC2_TARGET_DIR secret is not set"
             exit 1
           fi
-          
+
           echo "All secrets are configured"
-          
+
           # Setup SSH
           echo "$KEY" > deploy_key
           chmod 600 deploy_key
-          
+
           # Create .ssh directory if it doesn't exist
           mkdir -p ~/.ssh
-          
+
           # Add host to known hosts with error handling
           echo "Adding host to known hosts..."
           ssh-keyscan -H $HOST >> ~/.ssh/known_hosts 2>/dev/null || {
             echo "Warning: Could not add host to known hosts automatically"
             ssh-keyscan -t rsa,ecdsa,ed25519 $HOST >> ~/.ssh/known_hosts 2>/dev/null
           }
-          
+
           # Test connection first
           echo "Testing SSH connection..."
           ssh -i deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=10 $USERNAME@$HOST "echo 'SSH connection successful'" || {
