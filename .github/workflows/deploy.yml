@@ -2,70 +2,70 @@ name: Deploy to AWS EC2
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Deno
-      uses: denoland/setup-deno@v1
-      with:
-        deno-version: v2.x
-    
-    - name: Verify formatting
-      run: deno fmt --check
-    
-    - name: Run linter
-      run: deno lint
-    
-    - name: Run tests
-      run: deno test --allow-net
-    
-    - name: Type check
-      run: deno check src/main.ts
+      - uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v2.x
+
+      - name: Verify formatting
+        run: deno fmt --check
+
+      - name: Run linter
+        run: deno lint
+
+      - name: Run tests
+        run: deno test --allow-net
+
+      - name: Type check
+        run: deno check src/main.ts
 
   deploy:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Deploy to EC2
-      env:
-        HOST: ${{ secrets.EC2_HOST }}
-        USERNAME: ${{ secrets.EC2_USERNAME }}
-        KEY: ${{ secrets.EC2_SSH_KEY }}
-        TARGET: ${{ secrets.EC2_TARGET_DIR }}
-      run: |
-        # Setup SSH
-        echo "$KEY" > deploy_key
-        chmod 600 deploy_key
-        
-        # Add host to known hosts
-        ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
-        
-        # Create deployment directory if it doesn't exist
-        ssh -i deploy_key $USERNAME@$HOST "mkdir -p $TARGET"
-        
-        # Copy files to server
-        scp -i deploy_key -r ./src ./deno.json ./scripts $USERNAME@$HOST:$TARGET/
-        
-        # Run deployment script on server
-        ssh -i deploy_key $USERNAME@$HOST "cd $TARGET && bash scripts/deploy.sh"
-        
-        # Cleanup
-        rm -f deploy_key
-    
-    - name: Health Check
-      run: |
-        sleep 10
-        curl -f http://${{ secrets.EC2_HOST }}:8000/health || exit 1
-        echo "Health check passed!"
+      - uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          USERNAME: ${{ secrets.EC2_USERNAME }}
+          KEY: ${{ secrets.EC2_SSH_KEY }}
+          TARGET: ${{ secrets.EC2_TARGET_DIR }}
+        run: |
+          # Setup SSH
+          echo "$KEY" > deploy_key
+          chmod 600 deploy_key
+
+          # Add host to known hosts
+          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
+
+          # Create deployment directory if it doesn't exist
+          ssh -i deploy_key $USERNAME@$HOST "mkdir -p $TARGET"
+
+          # Copy files to server
+          scp -i deploy_key -r ./src ./deno.json ./scripts $USERNAME@$HOST:$TARGET/
+
+          # Run deployment script on server
+          ssh -i deploy_key $USERNAME@$HOST "cd $TARGET && bash scripts/deploy.sh"
+
+          # Cleanup
+          rm -f deploy_key
+
+      - name: Health Check
+        run: |
+          sleep 10
+          curl -f http://${{ secrets.EC2_HOST }}:8000/health || exit 1
+          echo "Health check passed!"
