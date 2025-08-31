@@ -5,6 +5,20 @@ set -e
 
 echo "Starting deployment..."
 
+# Set up PATH for Deno
+export DENO_INSTALL="/home/ubuntu/.deno"
+export PATH="$DENO_INSTALL/bin:$PATH"
+
+# Check if Deno is installed
+if [ ! -f "/home/ubuntu/.deno/bin/deno" ]; then
+  echo "Error: Deno is not installed at /home/ubuntu/.deno/bin/deno"
+  echo "Please install Deno on the server first"
+  exit 1
+fi
+
+echo "Deno found at: /home/ubuntu/.deno/bin/deno"
+/home/ubuntu/.deno/bin/deno --version
+
 # Navigate to app directory
 cd /home/ubuntu/app
 
@@ -12,7 +26,7 @@ cd /home/ubuntu/app
 # git pull origin main
 
 # Install/Update dependencies
-deno cache src/main.ts
+/home/ubuntu/.deno/bin/deno cache src/main.ts
 
 # Create PM2 ecosystem file if it doesn't exist
 if [ ! -f ecosystem.config.js ]; then
@@ -20,7 +34,7 @@ if [ ! -f ecosystem.config.js ]; then
 module.exports = {
   apps: [{
     name: 'deno-api',
-    script: 'deno',
+    script: '/home/ubuntu/.deno/bin/deno',
     args: 'run --allow-net --allow-env --allow-sys src/main.ts',
     env: {
       PORT: 8000
