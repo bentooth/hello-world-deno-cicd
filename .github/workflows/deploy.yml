@@ -45,27 +45,67 @@ jobs:
           KEY: ${{ secrets.EC2_SSH_KEY }}
           TARGET: ${{ secrets.EC2_TARGET_DIR }}
         run: |
+          # Debug: Check if secrets are set
+          if [ -z "$HOST" ]; then
+            echo "Error: EC2_HOST secret is not set"
+            exit 1
+          fi
+          if [ -z "$USERNAME" ]; then
+            echo "Error: EC2_USERNAME secret is not set"
+            exit 1
+          fi
+          if [ -z "$KEY" ]; then
+            echo "Error: EC2_SSH_KEY secret is not set"
+            exit 1
+          fi
+          if [ -z "$TARGET" ]; then
+            echo "Error: EC2_TARGET_DIR secret is not set"
+            exit 1
+          fi
+          
+          echo "All secrets are configured"
+          
           # Setup SSH
           echo "$KEY" > deploy_key
           chmod 600 deploy_key
-
+          
           # Create .ssh directory if it doesn't exist
           mkdir -p ~/.ssh
-
-          # Add host to known hosts
-          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
+          
+          # Add host to known hosts with error handling
+          echo "Adding host to known hosts..."
+          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts 2>/dev/null || {
+            echo "Warning: Could not add host to known hosts automatically"
+            ssh-keyscan -t rsa,ecdsa,ed25519 $HOST >> ~/.ssh/known_hosts 2>/dev/null
+          }
+          
+          # Test connection first
+          echo "Testing SSH connection..."
+          ssh -i deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=10 $USERNAME@$HOST "echo 'SSH connection successful'" || {
+            echo "Error: Cannot connect to EC2 instance"
+            echo "Please check:"
+            echo "1. EC2_HOST is correct"
+            echo "2. EC2_USERNAME is correct (should be 'ubuntu' for Ubuntu instances)"
+            echo "3. EC2_SSH_KEY contains the correct private key"
+            echo "4. Security group allows SSH from GitHub Actions IP"
+            exit 1
+          }
 
           # Create deployment directory if it doesn't exist
-          ssh -i deploy_key $USERNAME@$HOST "mkdir -p $TARGET"
+          echo "Creating deployment directory..."
+          ssh -i deploy_key -o StrictHostKeyChecking=no $USERNAME@$HOST "mkdir -p $TARGET"
 
           # Copy files to server
-          scp -i deploy_key -r ./src ./deno.json ./scripts $USERNAME@$HOST:$TARGET/
+          echo "Copying files to server..."
+          scp -i deploy_key -o StrictHostKeyChecking=no -r ./src ./deno.json ./scripts $USERNAME@$HOST:$TARGET/
 
           # Run deployment script on server
-          ssh -i deploy_key $USERNAME@$HOST "cd $TARGET && bash scripts/deploy.sh"
+          echo "Running deployment script..."
+          ssh -i deploy_key -o StrictHostKeyChecking=no $USERNAME@$HOST "cd $TARGET && bash scripts/deploy.sh"
 
           # Cleanup
           rm -f deploy_key
+          echo "Deployment completed successfully!"
 
       - name: Health Check
         run: |
