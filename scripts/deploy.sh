@@ -21,7 +21,7 @@ module.exports = {
   apps: [{
     name: 'deno-api',
     script: 'deno',
-    args: 'run --allow-net --allow-env src/main.ts',
+    args: 'run --allow-net --allow-env --allow-sys src/main.ts',
     env: {
       PORT: 8000
     },
