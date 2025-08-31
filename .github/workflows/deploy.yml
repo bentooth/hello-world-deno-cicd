@@ -48,10 +48,10 @@ jobs:
           # Setup SSH
           echo "$KEY" > deploy_key
           chmod 600 deploy_key
-          
+
           # Create .ssh directory if it doesn't exist
           mkdir -p ~/.ssh
-          
+
           # Add host to known hosts
           ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
 
