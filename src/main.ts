@@ -7,7 +7,7 @@ const handler = (req: Request): Response => {
     case "/":
       return new Response(
         JSON.stringify({
-          message: "Hello World from Deno 2!",
+          message: "Hello World!",
           timestamp: new Date().toISOString(),
           version: "1.0.0",
         }),
