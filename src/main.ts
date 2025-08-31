@@ -1,5 +1,3 @@
-import { serve } from "@std/http/server";
-
 const port = parseInt(Deno.env.get("PORT") || "8000");
 
 const handler = (req: Request): Response => {
@@ -18,7 +16,7 @@ const handler = (req: Request): Response => {
     case "/health":
       return new Response(JSON.stringify({ 
         status: "healthy",
-        uptime: process.uptime()
+        uptime: performance.now()
       }), {
         headers: { "content-type": "application/json" },
       });
@@ -29,4 +27,4 @@ const handler = (req: Request): Response => {
 };
 
 console.log(`Server running on http://localhost:${port}/`);
-await serve(handler, { port });
+Deno.serve({ port }, handler);

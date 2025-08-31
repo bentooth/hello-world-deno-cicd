@@ -50,21 +50,20 @@ hello-world-deno-cicd/
 ```json
 {
   "tasks": {
-    "dev": "deno run --watch --allow-net src/main.ts",
-    "start": "deno run --allow-net src/main.ts",
+    "dev": "deno run --watch --allow-net --allow-env src/main.ts",
+    "start": "deno run --allow-net --allow-env src/main.ts",
     "test": "deno test --allow-net",
     "fmt": "deno fmt",
     "lint": "deno lint"
   },
   "imports": {
-    "@std/http": "jsr:@std/http@^1.0.0"
+    "@std/assert": "jsr:@std/assert@^1.0.0"
   }
 }
 ```
 
 ### Create `src/main.ts` - Hello World API
 ```typescript
-import { serve } from "@std/http/server";
 
 const port = parseInt(Deno.env.get("PORT") || "8000");
 
@@ -84,7 +83,7 @@ const handler = (req: Request): Response => {
     case "/health":
       return new Response(JSON.stringify({ 
         status: "healthy",
-        uptime: process.uptime()
+        uptime: performance.now()
       }), {
         headers: { "content-type": "application/json" },
       });
@@ -95,7 +94,7 @@ const handler = (req: Request): Response => {
 };
 
 console.log(`Server running on http://localhost:${port}/`);
-await serve(handler, { port });
+Deno.serve({ port }, handler);
 ```
 
 ### Create `src/main.test.ts` - Basic tests
